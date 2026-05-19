@@ -1,0 +1,65 @@
+# ── Python ───────────────────────────────────────────────────────
+__pycache__/
+*.py[cod]
+*.pyo
+*.pyd
+.Python
+*.egg-info/
+dist/
+build/
+*.egg
+.eggs/
+
+# ── Virtual environments ──────────────────────────────────────────
+venv/
+env/
+.env
+.venv/
+ENV/
+
+# ── Environment variables ─────────────────────────────────────────
+.env
+.env.local
+.env.*.local
+
+# ── ML / Data ─────────────────────────────────────────────────────
+backend/data/processed/
+backend/data/raw/*.csv
+models/*.pkl
+# Keep the directory structure
+!backend/data/raw/.gitkeep
+!backend/data/processed/.gitkeep
+!models/.gitkeep
+
+# ── MLflow ────────────────────────────────────────────────────────
+mlruns/*/
+!mlruns/.gitkeep
+
+# ── Plots (generated) ─────────────────────────────────────────────
+backend/plots/
+
+# ── Node / React ──────────────────────────────────────────────────
+frontend/node_modules/
+frontend/build/
+frontend/.pnp
+frontend/.pnp.js
+frontend/coverage/
+npm-debug.log*
+yarn-debug.log*
+yarn-error.log*
+
+# ── OS ────────────────────────────────────────────────────────────
+.DS_Store
+.DS_Store?
+._*
+.Spotlight-V100
+.Trashes
+Thumbs.db
+Desktop.ini
+
+# ── IDEs ──────────────────────────────────────────────────────────
+.vscode/
+.idea/
+*.swp
+*.swo
+*~
