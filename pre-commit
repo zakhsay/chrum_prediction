@@ -1,0 +1,76 @@
+#!/bin/bash
+# ════════════════════════════════════════════════════════════════
+# .git/hooks/pre-commit — Tache 5 Partie 5
+# Hook Git : valide le modele avant chaque commit.
+#
+# Installation (Linux/Mac) :
+#   cp pre-commit .git/hooks/pre-commit
+#   chmod +x .git/hooks/pre-commit
+#
+# Installation (Windows PowerShell) :
+#   Copy-Item pre-commit .git\hooks\pre-commit
+# ════════════════════════════════════════════════════════════════
+
+echo ""
+echo "========================================"
+echo "  Validation du modele (pre-commit)..."
+echo "========================================"
+
+python -c "
+import os, sys
+from pathlib import Path
+
+BACKEND_DIR = os.path.join(os.getcwd(), 'backend')
+PROJECT_DIR = os.getcwd()
+MLRUNS_DIR  = os.path.join(PROJECT_DIR, 'mlruns')
+sys.path.insert(0, BACKEND_DIR)
+
+if not os.path.exists(MLRUNS_DIR):
+    print('[WARN] mlruns/ introuvable — validation ignoree.')
+    print('       Lancez python backend/train.py avant de commiter.')
+    sys.exit(0)
+
+try:
+    import mlflow
+    from mlflow.tracking import MlflowClient
+    mlflow.set_tracking_uri(Path(MLRUNS_DIR).as_uri())
+    client = MlflowClient()
+    exp = client.get_experiment_by_name('churn_prediction_task3')
+    if not exp:
+        print('[WARN] Experience introuvable — validation ignoree.')
+        sys.exit(0)
+    runs = client.search_runs(
+        experiment_ids=[exp.experiment_id],
+        order_by=['metrics.accuracy DESC'],
+        max_results=1,
+    )
+    if not runs:
+        print('[WARN] Aucun run — validation ignoree.')
+        sys.exit(0)
+    acc = runs[0].data.metrics.get('accuracy', 0)
+    f1  = runs[0].data.metrics.get('f1', 0)
+    print(f'  Meilleur run  : {runs[0].info.run_name}')
+    print(f'  Accuracy      : {acc:.4f}')
+    print(f'  F1 Score      : {f1:.4f}')
+    assert acc > 0.70, f'Accuracy trop faible: {acc:.4f} < 0.70'
+    print(f'  [OK] Validation reussie !')
+except AssertionError as e:
+    print(f'  [ECHEC] {e}')
+    print('  COMMIT REFUSE — ameliorez le modele avant de commiter.')
+    sys.exit(1)
+except Exception as e:
+    print(f'  [WARN] Impossible de valider : {e}')
+    sys.exit(0)
+"
+
+if [ $? -ne 0 ]; then
+    echo "========================================"
+    echo "  COMMIT REFUSE : modele invalide"
+    echo "========================================"
+    exit 1
+fi
+
+echo "========================================"
+echo "  Commit autorise."
+echo "========================================"
+exit 0

@@ -1,12 +1,16 @@
 """
 data_loader.py
-Locates and loads the raw Telecom Churn CSV dataset.
+Charge le dataset Telecom Customers Churn.
 
-Place the dataset at:
-    backend/data/raw/Telecom_Customers_Churn.csv
+IMPORTANT — Placer le vrai CSV ici AVANT de lancer train.py :
+    C:\chrum_project\chrum_prediction\backend\data\raw\Telecom_Customers_Churn.csv
+
+Telecharger sur Kaggle :
+    https://www.kaggle.com/datasets/mnassrib/telecom-churn-datasets
 """
 
 import os
+import sys
 import pandas as pd
 
 BACKEND_DIR  = os.path.dirname(os.path.abspath(__file__))
@@ -15,57 +19,41 @@ CSV_FILENAME = "Telecom_customer_churn.csv"
 CSV_PATH     = os.path.join(DATA_RAW_DIR, CSV_FILENAME)
 
 
-def load_raw(filepath: str = CSV_PATH) -> pd.DataFrame:
-    """
-    Load the raw CSV and return a DataFrame.
-    If the file is missing, generates a synthetic dataset.
-    """
+def load_raw(filepath=CSV_PATH):
+    """Charge le vrai CSV. Arrete si manquant — PAS de donnees synthetiques."""
     if not os.path.exists(filepath):
-        print(f"[data_loader] CSV not found at {filepath}. Generating synthetic data...")
-        import numpy as np
-        
-        np.random.seed(42)
-        n_samples = 1000
-        
-        df = pd.DataFrame({
-            "customerID": [f"CUST_{i:04d}" for i in range(n_samples)],
-            "gender": np.random.choice(["Male", "Female"], size=n_samples),
-            "SeniorCitizen": np.random.choice([0, 1], size=n_samples),
-            "Partner": np.random.choice(["Yes", "No"], size=n_samples),
-            "Dependents": np.random.choice(["Yes", "No"], size=n_samples),
-            "tenure": np.random.randint(0, 73, size=n_samples),
-            "PhoneService": np.random.choice(["Yes", "No"], size=n_samples),
-            "MultipleLines": np.random.choice(["No phone service", "No", "Yes"], size=n_samples),
-            "InternetService": np.random.choice(["DSL", "Fiber optic", "No"], size=n_samples),
-            "OnlineSecurity": np.random.choice(["No", "Yes", "No internet service"], size=n_samples),
-            "OnlineBackup": np.random.choice(["No", "Yes", "No internet service"], size=n_samples),
-            "DeviceProtection": np.random.choice(["No", "Yes", "No internet service"], size=n_samples),
-            "TechSupport": np.random.choice(["No", "Yes", "No internet service"], size=n_samples),
-            "StreamingTV": np.random.choice(["No", "Yes", "No internet service"], size=n_samples),
-            "StreamingMovies": np.random.choice(["No", "Yes", "No internet service"], size=n_samples),
-            "Contract": np.random.choice(["Month-to-month", "One year", "Two year"], size=n_samples),
-            "PaperlessBilling": np.random.choice(["Yes", "No"], size=n_samples),
-            "PaymentMethod": np.random.choice([
-                "Electronic check", "Mailed check", "Bank transfer (automatic)", "Credit card (automatic)"
-            ], size=n_samples),
-            "MonthlyCharges": np.random.uniform(18.0, 118.0, size=n_samples),
-            "Churn": np.random.choice(["Yes", "No"], size=n_samples, p=[0.26, 0.74])
-        })
-        
-        # Calculate TotalCharges based on tenure and MonthlyCharges to make it somewhat realistic
-        df["TotalCharges"] = df["tenure"] * df["MonthlyCharges"]
-        df["TotalCharges"] = df["TotalCharges"].astype(str) # preprocessing expects string/object
-        
-        print(f"[data_loader] Generated synthetic dataset with {len(df):,} rows x {len(df.columns)} columns")
-        df.to_csv(filepath, index=False)
-        return df
-        
+        print("\n" + "="*65)
+        print("  ERREUR : fichier CSV introuvable !")
+        print("="*65)
+        print(f"\n  Chemin attendu :")
+        print(f"  {filepath}")
+        print()
+        print("  SOLUTION EN 2 ETAPES :")
+        print()
+        print("  1. Telecharger le dataset Kaggle :")
+        print("     https://www.kaggle.com/datasets/mnassrib/telecom-churn-datasets")
+        print()
+        print("  2. Copier le fichier dans :")
+        print(f"     {DATA_RAW_DIR}")
+        print()
+        print("  Le fichier doit s'appeler exactement :")
+        print(f"     {CSV_FILENAME}")
+        print("="*65 + "\n")
+        sys.exit(1)
+
     df = pd.read_csv(filepath)
-    print(f"[data_loader] Loaded {len(df):,} rows x {len(df.columns)} columns")
+    n_rows = len(df)
+
+    if n_rows < 5000:
+        print(f"\n[AVERTISSEMENT] Seulement {n_rows} lignes chargees.")
+        print(f"  Le vrai dataset en a 7 043.")
+        print(f"  Verifiez que vous avez telecharge le bon fichier Kaggle.\n")
+
+    print(f"[data_loader] Dataset charge : {n_rows:,} lignes x {len(df.columns)} colonnes")
     return df
 
 
 if __name__ == "__main__":
     df = load_raw()
     print(df.head())
-    print("\nDtypes:\n", df.dtypes)
+    print(f"\nColonnes : {list(df.columns)}")
