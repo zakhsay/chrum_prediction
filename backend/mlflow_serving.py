@@ -121,8 +121,8 @@ def run_server():
 
     # Fallback : charger le .pkl local
     if model is None:
-        for fname in ["Random_Forest.pkl", "XGBoost.pkl", "AdaBoost.pkl",
-                      "SVM.pkl", "Logistic_Regression.pkl", "KNN.pkl"]:
+        for fname in ["random_forest.pkl", "xgboost.pkl", "AdaBoost.pkl",
+                      "adaboost.pkl", "svm.pkl", "logistic_regression.pkl", "knn.pkl"]:
             fpath = os.path.join(MODELS_DIR, fname)
             if os.path.exists(fpath):
                 model      = joblib.load(fpath)
@@ -149,6 +149,20 @@ def run_server():
     )
     app.add_middleware(CORSMiddleware, allow_origins=["*"],
                        allow_methods=["*"], allow_headers=["*"])
+
+    @app.get("/")
+    def root():
+        return {
+            "service": "ChurnML — API REST (Tache 5 Partie 4)",
+            "model": model_name,
+            "endpoints": {
+                "GET  /health":           "Statut du serveur",
+                "GET  /models":           "Modeles disponibles",
+                "GET  /docs":             "Documentation Swagger",
+                "POST /invocations":      "Prediction format MLflow natif",
+                "POST /predict/simple":   "Prediction simplifiee",
+            },
+        }
 
     @app.get("/health")
     def health():
@@ -181,8 +195,25 @@ def run_server():
                 raise HTTPException(status_code=400,
                     detail="Format attendu : {'dataframe_split': {'columns':[], 'data':[]}}")
 
-            ds    = payload["dataframe_split"]
-            df    = pd.DataFrame(ds["data"], columns=ds["columns"])
+            ds = payload["dataframe_split"]
+            df = pd.DataFrame(ds["data"], columns=ds["columns"])
+
+            # Apply scaler to numeric columns if present
+            num_cols = [c for c in ["tenure", "MonthlyCharges", "TotalCharges"] if c in df.columns]
+            if scaler is not None and num_cols:
+                df[num_cols] = scaler.transform(df[num_cols])
+
+            # Align columns to match training feature set
+            try:
+                from preprocessing import load_splits
+                X_train, _, _, _, _ = load_splits()
+                for col in X_train.columns:
+                    if col not in df.columns:
+                        df[col] = 0
+                df = df[X_train.columns]
+            except Exception:
+                pass
+
             preds = model.predict(df).tolist()
             proba = model.predict_proba(df)[:, 1].tolist() \
                     if hasattr(model, "predict_proba") else None
